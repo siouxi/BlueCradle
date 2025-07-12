@@ -1,15 +1,8 @@
 /*==============================================================*/
 /* DBMS name:      Microsoft SQL Server 2008                    */
-/* Created on:     10/07/2025 20:16:08                          */
+/* Created on:     11/07/2025 21:01:23                          */
 /*==============================================================*/
 
-
-if exists (select 1
-   from sys.sysreferences r join sys.sysobjects o on (o.id = r.constid and o.type = 'F')
-   where r.fkeyid = object_id('CATEGORIA__PRODUCTO') and o.name = 'FK_CATEGORI_PERTENECE_PRODUCTO')
-alter table CATEGORIA__PRODUCTO
-   drop constraint FK_CATEGORI_PERTENECE_PRODUCTO
-go
 
 if exists (select 1
    from sys.sysreferences r join sys.sysobjects o on (o.id = r.constid and o.type = 'F')
@@ -20,9 +13,16 @@ go
 
 if exists (select 1
    from sys.sysreferences r join sys.sysobjects o on (o.id = r.constid and o.type = 'F')
-   where r.fkeyid = object_id('TIENDA') and o.name = 'FK_TIENDA_EXISTENCI_INVENTAR')
-alter table TIENDA
-   drop constraint FK_TIENDA_EXISTENCI_INVENTAR
+   where r.fkeyid = object_id('INVENTARIO') and o.name = 'FK_INVENTAR_EXISTENCI_TIENDA')
+alter table INVENTARIO
+   drop constraint FK_INVENTAR_EXISTENCI_TIENDA
+go
+
+if exists (select 1
+   from sys.sysreferences r join sys.sysobjects o on (o.id = r.constid and o.type = 'F')
+   where r.fkeyid = object_id('PRODUCTO') and o.name = 'FK_PRODUCTO_PERTENECE_CATEGORI')
+alter table PRODUCTO
+   drop constraint FK_PRODUCTO_PERTENECE_CATEGORI
 go
 
 if exists (select 1
@@ -54,15 +54,6 @@ alter table VENTA
 go
 
 if exists (select 1
-            from  sysindexes
-           where  id    = object_id('CATEGORIA__PRODUCTO')
-            and   name  = 'PERTENECE_A_FK'
-            and   indid > 0
-            and   indid < 255)
-   drop index CATEGORIA__PRODUCTO.PERTENECE_A_FK
-go
-
-if exists (select 1
             from  sysobjects
            where  id = object_id('CATEGORIA__PRODUCTO')
             and   type = 'U')
@@ -74,6 +65,15 @@ if exists (select 1
            where  id = object_id('CLIENTE')
             and   type = 'U')
    drop table CLIENTE
+go
+
+if exists (select 1
+            from  sysindexes
+           where  id    = object_id('INVENTARIO')
+            and   name  = 'EXISTENCIA_FK'
+            and   indid > 0
+            and   indid < 255)
+   drop index INVENTARIO.EXISTENCIA_FK
 go
 
 if exists (select 1
@@ -93,6 +93,15 @@ if exists (select 1
 go
 
 if exists (select 1
+            from  sysindexes
+           where  id    = object_id('PRODUCTO')
+            and   name  = 'PERTENECE_A_FK'
+            and   indid > 0
+            and   indid < 255)
+   drop index PRODUCTO.PERTENECE_A_FK
+go
+
+if exists (select 1
             from  sysobjects
            where  id = object_id('PRODUCTO')
             and   type = 'U')
@@ -104,15 +113,6 @@ if exists (select 1
            where  id = object_id('PROVEEDOR')
             and   type = 'U')
    drop table PROVEEDOR
-go
-
-if exists (select 1
-            from  sysindexes
-           where  id    = object_id('TIENDA')
-            and   name  = 'EXISTENCIA_FK'
-            and   indid > 0
-            and   indid < 255)
-   drop index TIENDA.EXISTENCIA_FK
 go
 
 if exists (select 1
@@ -141,18 +141,9 @@ go
 /*==============================================================*/
 create table CATEGORIA__PRODUCTO (
    ID_CATEGORIA         bigint               not null,
-   ID_PRODUCTOS         bigint               not null,
    NOMBRE_CATEGORIA     varchar(32)          not null,
    DESCRIPCCION_CATEGORIA varchar(255)         not null,
    constraint PK_CATEGORIA__PRODUCTO primary key nonclustered (ID_CATEGORIA)
-)
-go
-
-/*==============================================================*/
-/* Index: PERTENECE_A_FK                                        */
-/*==============================================================*/
-create index PERTENECE_A_FK on CATEGORIA__PRODUCTO (
-ID_PRODUCTOS ASC
 )
 go
 
@@ -175,6 +166,7 @@ go
 create table INVENTARIO (
    ID_INVENTARIO        bigint               not null,
    ID_PRODUCTOS         bigint               null,
+   ID_TIENDA            bigint               not null,
    CANTIDAD_STOCK       int                  not null,
    CANTIDAD_MINIMA_STOCK int                  not null,
    constraint PK_INVENTARIO primary key nonclustered (ID_INVENTARIO)
@@ -190,10 +182,19 @@ ID_PRODUCTOS ASC
 go
 
 /*==============================================================*/
+/* Index: EXISTENCIA_FK                                         */
+/*==============================================================*/
+create index EXISTENCIA_FK on INVENTARIO (
+ID_TIENDA ASC
+)
+go
+
+/*==============================================================*/
 /* Table: PRODUCTO                                              */
 /*==============================================================*/
 create table PRODUCTO (
    ID_PRODUCTOS         bigint               not null,
+   ID_CATEGORIA         bigint               not null,
    NOMBRE_PRODUCTO      varchar(64)          not null,
    PRECIO_UNITARIO      decimal(10,2)        not null,
    COLOR_PRODUCTO       varchar(16)          not null,
@@ -202,6 +203,14 @@ create table PRODUCTO (
    IMAGEN_PRODUCTO      image                null,
    DESCRIPCION_CORTA    varchar(255)         null,
    constraint PK_PRODUCTO primary key nonclustered (ID_PRODUCTOS)
+)
+go
+
+/*==============================================================*/
+/* Index: PERTENECE_A_FK                                        */
+/*==============================================================*/
+create index PERTENECE_A_FK on PRODUCTO (
+ID_CATEGORIA ASC
 )
 go
 
@@ -225,20 +234,11 @@ go
 /*==============================================================*/
 create table TIENDA (
    ID_TIENDA            bigint               not null,
-   ID_INVENTARIO        bigint               null,
    NOMBRE_TIENDA        varchar(32)          not null,
    DIRECCION_TIENDA     varchar(64)          not null,
    CIUDAD_TIENDA        varchar(16)          not null,
    TELEFONO_TIENDA      varchar(32)          null,
    constraint PK_TIENDA primary key nonclustered (ID_TIENDA)
-)
-go
-
-/*==============================================================*/
-/* Index: EXISTENCIA_FK                                         */
-/*==============================================================*/
-create index EXISTENCIA_FK on TIENDA (
-ID_INVENTARIO ASC
 )
 go
 
@@ -266,19 +266,19 @@ create table VENTA (
 )
 go
 
-alter table CATEGORIA__PRODUCTO
-   add constraint FK_CATEGORI_PERTENECE_PRODUCTO foreign key (ID_PRODUCTOS)
-      references PRODUCTO (ID_PRODUCTOS)
-go
-
 alter table INVENTARIO
    add constraint FK_INVENTAR_DISPONIBI_PRODUCTO foreign key (ID_PRODUCTOS)
       references PRODUCTO (ID_PRODUCTOS)
 go
 
-alter table TIENDA
-   add constraint FK_TIENDA_EXISTENCI_INVENTAR foreign key (ID_INVENTARIO)
-      references INVENTARIO (ID_INVENTARIO)
+alter table INVENTARIO
+   add constraint FK_INVENTAR_EXISTENCI_TIENDA foreign key (ID_TIENDA)
+      references TIENDA (ID_TIENDA)
+go
+
+alter table PRODUCTO
+   add constraint FK_PRODUCTO_PERTENECE_CATEGORI foreign key (ID_CATEGORIA)
+      references CATEGORIA__PRODUCTO (ID_CATEGORIA)
 go
 
 alter table TRATO

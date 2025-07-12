@@ -1,22 +1,8 @@
 /*==============================================================*/
 /* DBMS name:      Microsoft SQL Server 2008                    */
-/* Created on:     10/07/2025 20:09:41                          */
+/* Created on:     11/07/2025 21:01:46                          */
 /*==============================================================*/
 
-
-if exists (select 1
-   from sys.sysreferences r join sys.sysobjects o on (o.id = r.constid and o.type = 'F')
-   where r.fkeyid = object_id('COBRA') and o.name = 'FK_COBRA_COBRA_PENALTI')
-alter table COBRA
-   drop constraint FK_COBRA_COBRA_PENALTI
-go
-
-if exists (select 1
-   from sys.sysreferences r join sys.sysobjects o on (o.id = r.constid and o.type = 'F')
-   where r.fkeyid = object_id('COBRA') and o.name = 'FK_COBRA_COBRA2_JUGADOR')
-alter table COBRA
-   drop constraint FK_COBRA_COBRA2_JUGADOR
-go
 
 if exists (select 1
    from sys.sysreferences r join sys.sysobjects o on (o.id = r.constid and o.type = 'F')
@@ -34,16 +20,16 @@ go
 
 if exists (select 1
    from sys.sysreferences r join sys.sysobjects o on (o.id = r.constid and o.type = 'F')
-   where r.fkeyid = object_id('CONTRATOS') and o.name = 'FK_CONTRATO_TIENE_CON_JUGADOR')
+   where r.fkeyid = object_id('CONTRATOS') and o.name = 'FK_CONTRATO_TIENE_CON_PERSONAL')
 alter table CONTRATOS
-   drop constraint FK_CONTRATO_TIENE_CON_JUGADOR
+   drop constraint FK_CONTRATO_TIENE_CON_PERSONAL
 go
 
 if exists (select 1
    from sys.sysreferences r join sys.sysobjects o on (o.id = r.constid and o.type = 'F')
-   where r.fkeyid = object_id('CONTRATOS') and o.name = 'FK_CONTRATO_TIENE_CON_PERSONAL')
+   where r.fkeyid = object_id('CONTRATOS') and o.name = 'FK_CONTRATO_TIENE_CON_JUGADOR')
 alter table CONTRATOS
-   drop constraint FK_CONTRATO_TIENE_CON_PERSONAL
+   drop constraint FK_CONTRATO_TIENE_CON_JUGADOR
 go
 
 if exists (select 1
@@ -167,6 +153,13 @@ go
 
 if exists (select 1
    from sys.sysreferences r join sys.sysobjects o on (o.id = r.constid and o.type = 'F')
+   where r.fkeyid = object_id('LESION') and o.name = 'FK_LESION_SE_LESION_ENTRENAM')
+alter table LESION
+   drop constraint FK_LESION_SE_LESION_ENTRENAM
+go
+
+if exists (select 1
+   from sys.sysreferences r join sys.sysobjects o on (o.id = r.constid and o.type = 'F')
    where r.fkeyid = object_id('PARTIDO_AMISTOSO') and o.name = 'FK_PARTIDO_AMISTOSO__ENCUENTRO_COMPETICION')
 alter table PARTIDO_AMISTOSO
    drop constraint FK_PARTIDO_AMISTOSO__ENCUENTRO_COMPETICION
@@ -184,6 +177,13 @@ if exists (select 1
    where r.fkeyid = object_id('PARTIDO_LIGA') and o.name = 'FK_PARTIDO_LIGA__ENCUENTRO_COMPETICION')
 alter table PARTIDO_LIGA
    drop constraint FK_PARTIDO_LIGA__ENCUENTRO_COMPETICION
+go
+
+if exists (select 1
+   from sys.sysreferences r join sys.sysobjects o on (o.id = r.constid and o.type = 'F')
+   where r.fkeyid = object_id('PENALTI') and o.name = 'FK_PENALTI_COBRA_JUGADOR')
+alter table PENALTI
+   drop constraint FK_PENALTI_COBRA_JUGADOR
 go
 
 if exists (select 1
@@ -275,13 +275,6 @@ if exists (select 1
    where r.fkeyid = object_id('TITULOS_Y_TROFEOS') and o.name = 'FK_TITULOS__RELATIONS_COMPETIC')
 alter table TITULOS_Y_TROFEOS
    drop constraint FK_TITULOS__RELATIONS_COMPETIC
-go
-
-if exists (select 1
-            from  sysobjects
-           where  id = object_id('COBRA')
-            and   type = 'U')
-   drop table COBRA
 go
 
 if exists (select 1
@@ -397,6 +390,15 @@ if exists (select 1
             and   indid > 0
             and   indid < 255)
    drop index LESION.HUBO_LESIONES2_FK
+go
+
+if exists (select 1
+            from  sysindexes
+           where  id    = object_id('LESION')
+            and   name  = 'SE_LESIONO_FK'
+            and   indid > 0
+            and   indid < 255)
+   drop index LESION.SE_LESIONO_FK
 go
 
 if exists (select 1
@@ -588,16 +590,6 @@ execute sp_bindrule R_NACIONALIDAD_DOMINIO, NACIONALIDAD_DOMINIO
 go
 
 /*==============================================================*/
-/* Table: COBRA                                                 */
-/*==============================================================*/
-create table COBRA (
-   ID_PENALTI           bigint               not null,
-   ID_PERSONAL          bigint               not null,
-   constraint PK_COBRA primary key nonclustered (ID_PENALTI, ID_PERSONAL)
-)
-go
-
-/*==============================================================*/
 /* Table: COMPETICION                                           */
 /*==============================================================*/
 create table COMPETICION (
@@ -748,7 +740,7 @@ create table JUGADOR (
    NUMERO_CAMISETA      int                  not null,
    POSICION_SECUNDARIA  varchar(20)          null,
    ALTURA               float(3)             null,
-   constraint PK_JUGADOR primary key nonclustered (ID_PERSONAL)
+   constraint AK_IDENTIFIER_1_JUGADOR unique (ID_PERSONAL)
 )
 go
 
@@ -759,6 +751,7 @@ create table LESION (
    ID_LESION            bigint               not null,
    ID_PERSONAL          bigint               null,
    ID_PARTIDO           bigint               null,
+   ID_ENTRENAMIENTO     int                  null,
    TIPO_LESION          varchar(32)          not null,
    GRAVEDAD             int                  not null,
    FECHA_LESION         datetime             not null,
@@ -772,6 +765,14 @@ go
 /*==============================================================*/
 create index INCAPACITADO_FK on LESION (
 ID_PERSONAL ASC
+)
+go
+
+/*==============================================================*/
+/* Index: SE_LESIONO_FK                                         */
+/*==============================================================*/
+create index SE_LESIONO_FK on LESION (
+ID_ENTRENAMIENTO ASC
 )
 go
 
@@ -796,9 +797,9 @@ create table PARTIDO_AMISTOSO (
    ESTADIO_PARTIDO      varchar(64)          null,
    TIPO_PARTIDO         varchar(1)           null,
    ID_COMPETICION       bigint               not null,
-   MOTIVO_AMISTOSO      varchar(100)         not null,
-   ORGANIZADOR_AMISTOSO varchar(100)         not null,
-   constraint PK_PARTIDO_AMISTOSO primary key nonclustered (ID_PARTIDO)
+   MOTIVO_AMISTOSO      varchar(100)         null,
+   ORGANIZADOR_AMISTOSO varchar(100)         null,
+   constraint AK_PARTIDO_AMISTOSO_PARTIDO_ unique (ID_PARTIDO)
 )
 go
 
@@ -823,9 +824,9 @@ create table PARTIDO_COPA (
    ESTADIO_PARTIDO      varchar(64)          null,
    TIPO_PARTIDO         varchar(1)           null,
    ID_COMPETICION       bigint               not null,
-   RONDA                varchar(32)          not null,
-   ES_ELIMINATORIA      bit                  not null,
-   constraint PK_PARTIDO_COPA primary key nonclustered (ID_PARTIDO)
+   RONDA                varchar(32)          null,
+   ES_ELIMINATORIA      bit                  null,
+   constraint AK_PARTIDO_COPA_PARTIDO_ unique (ID_PARTIDO)
 )
 go
 
@@ -850,9 +851,9 @@ create table PARTIDO_LIGA (
    ESTADIO_PARTIDO      varchar(64)          null,
    TIPO_PARTIDO         varchar(1)           null,
    ID_COMPETICION       bigint               not null,
-   JORNADA_LIGA         smallint             not null,
-   TEMPORADA_LIGA       varchar(32)          not null,
-   constraint PK_PARTIDO_LIGA primary key nonclustered (ID_PARTIDO)
+   JORNADA_LIGA         smallint             null,
+   TEMPORADA_LIGA       varchar(32)          null,
+   constraint AK_PARTIDO_LIGA_PARTIDO_ unique (ID_PARTIDO)
 )
 go
 
@@ -869,6 +870,7 @@ go
 /*==============================================================*/
 create table PENALTI (
    ID_PENALTI           bigint               not null,
+   ID_PERSONAL          bigint               null,
    ID_PARTIDO           bigint               null,
    RESULTADO_PENALTI    varchar(32)          not null,
    36                   float(10)            not null,
@@ -896,7 +898,7 @@ create table PERSONAL_TECNICO (
    TELEFONO_PERSONAL    bigint               null,
    LICENCIA_ENTRENADOR  bigint               null,
    ROL                  varchar(20)          null,
-   constraint PK_PERSONAL_TECNICO primary key nonclustered (ID_PERSONAL)
+   constraint AK_IDENTIFIER_1_PERSONAL unique (ID_PERSONAL)
 )
 go
 
@@ -990,16 +992,6 @@ ID_COMPETICION ASC
 )
 go
 
-alter table COBRA
-   add constraint FK_COBRA_COBRA_PENALTI foreign key (ID_PENALTI)
-      references PENALTI (ID_PENALTI)
-go
-
-alter table COBRA
-   add constraint FK_COBRA_COBRA2_JUGADOR foreign key (ID_PERSONAL)
-      references JUGADOR (ID_PERSONAL)
-go
-
 alter table COMPITE_JUEGA
    add constraint FK_COMPITE__COMPITE_J_COMPETIC foreign key (ID_COMPETICION)
       references COMPETICION (ID_COMPETICION)
@@ -1011,13 +1003,13 @@ alter table COMPITE_JUEGA
 go
 
 alter table CONTRATOS
-   add constraint FK_CONTRATO_TIENE_CON_JUGADOR foreign key (ID_PERSONAL)
-      references JUGADOR (ID_PERSONAL)
+   add constraint FK_CONTRATO_TIENE_CON_PERSONAL foreign key (ID_PERSONAL)
+      references PERSONAL_TECNICO (ID_PERSONAL)
 go
 
 alter table CONTRATOS
-   add constraint FK_CONTRATO_TIENE_CON_PERSONAL foreign key (ID_PERSONAL)
-      references PERSONAL_TECNICO (ID_PERSONAL)
+   add constraint FK_CONTRATO_TIENE_CON_JUGADOR foreign key (ID_PERSONAL)
+      references JUGADOR (ID_PERSONAL)
 go
 
 alter table DIRIGE_ENTRENAMIENTO
@@ -1047,12 +1039,12 @@ go
 
 alter table GOL
    add constraint FK_GOL_MARCO_PARTIDO_ foreign key (ID_PARTIDO)
-      references PARTIDO_LIGA (ID_PARTIDO)
+      references PARTIDO_COPA (ID_PARTIDO)
 go
 
 alter table GOL
    add constraint FK_GOL_MARCO2_PARTIDO_ foreign key (ID_PARTIDO)
-      references PARTIDO_COPA (ID_PARTIDO)
+      references PARTIDO_LIGA (ID_PARTIDO)
 go
 
 alter table GOL
@@ -1105,6 +1097,11 @@ alter table LESION
       references JUGADOR (ID_PERSONAL)
 go
 
+alter table LESION
+   add constraint FK_LESION_SE_LESION_ENTRENAM foreign key (ID_ENTRENAMIENTO)
+      references ENTRENAMIENTO (ID_ENTRENAMIENTO)
+go
+
 alter table PARTIDO_AMISTOSO
    add constraint FK_PARTIDO_AMISTOSO__ENCUENTRO_COMPETICION foreign key (ID_COMPETICION)
       references COMPETICION (ID_COMPETICION)
@@ -1118,6 +1115,11 @@ go
 alter table PARTIDO_LIGA
    add constraint FK_PARTIDO_LIGA__ENCUENTRO_COMPETICION foreign key (ID_COMPETICION)
       references COMPETICION (ID_COMPETICION)
+go
+
+alter table PENALTI
+   add constraint FK_PENALTI_COBRA_JUGADOR foreign key (ID_PERSONAL)
+      references JUGADOR (ID_PERSONAL)
 go
 
 alter table PENALTI
@@ -1162,12 +1164,12 @@ go
 
 alter table TACTICAS
    add constraint FK_TACTICAS_SE_USO_PARTIDO_ foreign key (ID_PARTIDO)
-      references PARTIDO_LIGA (ID_PARTIDO)
+      references PARTIDO_COPA (ID_PARTIDO)
 go
 
 alter table TACTICAS
    add constraint FK_TACTICAS_SE_USO2_PARTIDO_ foreign key (ID_PARTIDO)
-      references PARTIDO_COPA (ID_PARTIDO)
+      references PARTIDO_LIGA (ID_PARTIDO)
 go
 
 alter table TACTICAS
